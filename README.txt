@@ -1,7 +1,5 @@
 ##############################################################
-Notes from Apache Spark - Under the Hood 
-Getting started with core architecture and basic concepts
-Excerpt from Spark, The Definitive Guide
+Notes from Spark, The Definitive Guide
 ##############################################################
 
 Apache Spark philosophy
@@ -29,6 +27,8 @@ Basic Architecture
 	cluster manager
 		controls physical machines
 		allocates resources to Spark app
+	use spark shell for exploratory work
+	use spark-submit to send app code to cluster for stand-alone execution
 
 Spark App
 	driver process
@@ -82,16 +82,15 @@ Transformations
 	lazy evaluation
 	2 types of transformations
 		narrow transformations = narrow dependency
-			input partition will contribute to only 1 output partition
-			1 DF > 1 DF
+			1 input partition > 1 output partitionn
 			pipelining
 				specify multiple filters on DF for a transformation
 				all filters performed in memory
 		wide transformation = wide dependency
-			input partitions contribute to many output partitions
-			shuffle
+			1 input partition > multiple output partitions
+			computation requires a shuffle
 				exchange partitions across the cluster
-				Spark will write results to disk
+				Spark needs to write results to disk 
 
 Lazy Evalution
 	Spark will wait until the very last moment to execute the graph of computation instructions
@@ -123,25 +122,74 @@ End-to-End Example
 		bottom - data sources
 	shuffle partitions
 		by default Spark will output 200 shuffle partitions
-		overkill for this example
 		spark.conf.set("spark.sql.shuffle.partitions", "5")
+		will be used when performing a wide transformation
+	DF methods
+		many methods accept a string for the column name
+		groupBy > RelationalGroupedDataset
+			fancy DataFrame
+			specify key we are going to group by
+			the perform aggregation on that grouping
+			grouping is specified but user needs to specify aggregation before it can be queried further
 
-DataFrames and SQL
-	no performance difference between writing SQL queries or writing DataFrame code
-		allows you to query data using SQL
-		SQL query on DataFrame returns another DataFrame
-	createOrReplaceTempView
-		make DataFrame into a table or view
+Structured APIs
+	3 core distributed collection APIs
+		Datasets
+			Used for statically typed code in Java and Scala
+			not available for Python and R bc dynamically typed code 
+		Dataframes
+		SQL tables and views
+			no performance difference between writing SQL queries or writing DataFrame code
+				allows you to query data using SQL
+				SQL query on DataFrame returns another DataFrame
+			createOrReplaceTempView
+				make DataFrame into a table or view
 
-DataFrame methods
-	many methods accept a string for the column name
-	groupBy > RelationalGroupedDataset
-		fancy DataFrame
-		specify key we are going to group by
-		the perform aggregation on that grouping
-		grouping is specified but user needs to specify aggregation before it can be queried further
+DataFrame
+	distributed table like collection with well defined rows and columns
+		each row must have same number of columns
+			to Spark (in Scala) DataFrames are Datasets of Type Row
+		column type information must be consistent
+	schema
+		define column name and type 
+			schema-on-read is fine for ad-hoc analysis
+			good idea to define schema for prod ETL jobs
+		Boolean flag nullable specifies whether the column can contain missing or null values
+		Column Type can be
+			simple type
+				integer or string
+			complex type
+				array or map
+			null value
+		df.printSchema()
+	partitioning
+		defines the physical distribution across the cluster
+		partitioning scheme defines how it is allocated
+		can set based on values in a certain column or non-deterministically
+	columns
+		select, manipulate, and remove columns from DataFrames
+			these operations represent expressions
+			expression = set of tranformations on 1+ values in a record in a DF
+		logical constructs that represent a value computed on a per record basis by means of an expression
+		df.col("column_name")
+			specify column
+			useful when performing a join
+		df.columns returns list of column names 
+	rows
+		can create rows manually but rows do not have schema
+		if you append Row to DataFrame, must match DF schema
+		can access specific field using index
 
-
-##############################################################
-Notes from Spark, The Definitive Guide
-##############################################################
+RDD
+	DF transformations are really RDD transformations
+		Spark UI describes execution in terms of RDDs
+	SparkContext
+		entry point for lower level API functionality
+		access SparkContext through SparkSession
+			SparkSession = used to perform computation across a Spark cluster
+	RDD = immutable partitioned collection of records that can be operated on in parallel
+	unlike DF
+		these records are just Java/Python objects
+		do not contain known schema
+	Python can lose substantial when using RDDs
+		running UDFs row by row
