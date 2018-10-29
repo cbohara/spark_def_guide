@@ -266,11 +266,14 @@ SparkContext sends tasks to the executor to run
 Spark Client vs Cluster deploy mode
 https://techvidvan.com/tutorials/spark-modes-of-deployment/
 ##############################################################
-Deploy mode
-	client - submitter launches driver outside of the cluster
-		driver exists on local machine that launched cluster
-		risk network latency and slow data movement between driver and spark infrastructure
-	cluster - framework launches the driver inside of the cluster
-		driver exists on a machine in the cluster
-		reduce slow data movement
-		reduce risk of network disconnection
+
+client
+	submitter launches driver outside of the cluster
+	driver exists on local machine that launched cluster
+	risk network latency and slow data movement between driver and spark infrastructure
+
+cluster
+	framework launches the driver inside of the cluster
+	driver exists on a machine in the cluster
+	reduce slow data movement
+	reduce risk of network disconnection
