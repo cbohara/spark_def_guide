@@ -144,6 +144,12 @@ Structured APIs
 				SQL query on DataFrame returns another DataFrame
 			createOrReplaceTempView
 				make DataFrame into a table or view
+	Execution
+		1. Write DataFrame/SQL code
+		2. If valid code, Spark converts to Logic Plan
+			Resolved logical plan > optimized logical plan
+		3. Spark transforms Logic Plan to Physical Plan checking for optimizations along the way
+		4. Spark then executes the Physical Plan (RDD manipulations) on the cluster
 
 DataFrame
 	distributed table like collection with well defined rows and columns
@@ -154,7 +160,12 @@ DataFrame
 		define column name and type 
 			schema-on-read is fine for ad-hoc analysis
 			good idea to define schema for prod ETL jobs
-		Boolean flag nullable specifies whether the column can contain missing or null values
+		schema =StructType 
+			made up of StructFields
+				name
+				type
+				boolean
+					nullable specifies whether the column can contain missing or null values
 		Column Type can be
 			simple type
 				integer or string
@@ -193,3 +204,43 @@ RDD
 		do not contain known schema
 	Python can lose substantial when using RDDs
 		running UDFs row by row
+
+Developing Python Spark Apps
+	Package multiple python files into egg or zip 
+		use --py-files arg with spark-submit 
+		submit .py, .zip, or .egg files to be distributed with app
+
+Launching apps with spark-submit
+	--class 
+		main class for Java/Scala apps
+	--master
+		local
+			local[*] = run on all cores of your machine
+		yarn
+	--deploy-mode
+		default = client = launch the driver program locally
+		cluster = launch the driver program on one of the worker machines inside the cluster
+	--jars
+		comma sep list of jars to include on the driver and executor classpaths
+	--py-files
+		comma sep list of .py, .zip, or .egg files to place on PYTHONPATH for Python apps
+	--files
+		comma sep list of files to include in working dir of each executor
+	--conf
+		PROP=VALUE
+	--properties
+		path to a file from which to load extra properties
+		defaults to conf/spark-defaults.conf
+	--driver-memory
+		default 1024M
+	--executor-memory
+		default 1G
+
+	YARN specific
+	--num-executors
+		number of executors to launch
+		default = 2
+		if dynamic allocation is enabled, the intial number of executors will be at least num specified
+
+SparkConf
+	manages all app configs
