@@ -233,6 +233,8 @@ Launching apps with spark-submit
 		defaults to conf/spark-defaults.conf
 	--driver-memory
 		default 1024M
+		needs to be set via command line in client mode
+		can be set in SparkConf in app if cluster mode
 	--executor-memory
 		default 1G
 
@@ -244,3 +246,31 @@ Launching apps with spark-submit
 
 SparkConf
 	manages all app configs
+
+
+
+##############################################################
+Cluster Mode Overview
+https://spark.apache.org/docs/latest/cluster-overview.html
+##############################################################
+
+SparkContext object in driver program connects to cluster manager (YARN)
+	cluster manager allocates resources across apps
+Spark acquires executors on nodes in the cluster
+	executors run computations + store data
+Spark sends app code defined by jar or python files to executors 
+SparkContext sends tasks to the executor to run
+
+
+##############################################################
+Spark Client vs Cluster deploy mode
+https://techvidvan.com/tutorials/spark-modes-of-deployment/
+##############################################################
+Deploy mode
+	client - submitter launches driver outside of the cluster
+		driver exists on local machine that launched cluster
+		risk network latency and slow data movement between driver and spark infrastructure
+	cluster - framework launches the driver inside of the cluster
+		driver exists on a machine in the cluster
+		reduce slow data movement
+		reduce risk of network disconnection
