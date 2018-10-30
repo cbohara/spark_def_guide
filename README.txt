@@ -244,23 +244,6 @@ Launching apps with spark-submit
 		default = 2
 		if dynamic allocation is enabled, the intial number of executors will be at least num specified
 
-SparkConf
-	manages all app configs
-
-
-
-##############################################################
-Cluster Mode Overview
-https://spark.apache.org/docs/latest/cluster-overview.html
-##############################################################
-
-SparkContext object in driver program connects to cluster manager (YARN)
-	cluster manager allocates resources across apps
-Spark acquires executors on nodes in the cluster
-	executors run computations + store data
-Spark sends app code defined by jar or python files to executors 
-SparkContext sends tasks to the executor to run
-
 
 ##############################################################
 Spark Client vs Cluster deploy mode
