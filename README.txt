@@ -244,6 +244,13 @@ Launching apps with spark-submit
 		default = 2
 		if dynamic allocation is enabled, the intial number of executors will be at least num specified
 
+	EMR config
+		do not use maximizeResourceAllocation=True
+		recent EMR versions have dynamicAllocation enabled
+		using Spark on EMR will determine the ideal # of executors for you
+		only need to specify executor memory
+		maybe driver memory and overhead as well
+
 
 ##############################################################
 Spark Client vs Cluster deploy mode
