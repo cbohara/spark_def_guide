@@ -247,9 +247,23 @@ Launching apps with spark-submit
 	EMR config
 		do not use maximizeResourceAllocation=True
 		recent EMR versions have dynamicAllocation enabled
+			application may give resources back to the cluster if they are no longer used
+			request them again later when there is demand
 		using Spark on EMR will determine the ideal # of executors for you
 		only need to specify executor memory
 		maybe driver memory and overhead as well
+
+##############################################################
+Cluster overview
+https://spark.apache.org/docs/1.2.0/cluster-overview.html
+##############################################################
+
+Spark context in driver program connects with cluster manager
+	defined in app code
+Spark acquires executor resources within nodes
+	process = instance of a program running 
+	executors = processes that run computations and store data
+SparkContext sends tasks for the executor to run
 
 
 ##############################################################
@@ -267,3 +281,69 @@ cluster
 	driver exists on a machine in the cluster
 	reduce slow data movement
 	reduce risk of network disconnection
+
+##############################################################
+Tuning Spark Jobs
+https://blog.cloudera.com/blog/2015/03/how-to-tune-your-apache-spark-jobs-part-1/
+https://blog.cloudera.com/blog/2015/03/how-to-tune-your-apache-spark-jobs-part-2/
+##############################################################
+
+driver process
+	distribute work
+executor process
+	executes work in form of tasks
+		single executor has a number of slots for running tasks
+		run  many tasks concurrently
+	stores data user chooses to cache
+
+job = top of execution hierarchy
+	invoking action in Spark app triggers the launch of a Spark job to fulfill it
+	Spark examines graph of RDDs to formulate execution plan
+	execution plan assembles transformations into stages
+stages
+	correspond with collection of tasks 
+	all execute the same code
+	each on a diff subset of data
+	sequence of transformations that can be performed without shuffling the full data
+
+shuffling
+	narrow transformations do not require shuffling
+		ex: map, filter
+		input from single partition > output to single partition
+		coalesce 
+			involves multiple input partitions
+			still considered narrow
+			input residences on a limited subset of partitions
+	wide transformations require shuffling
+		ex: groupByKey
+		input from many partitions > output to single partition
+		Spark must execute a shuffle to transfer data around the cluster
+		results in new stage with new set of partitions
+			in order to generate a new stage data is written to disk by tasks in the parent stage
+			data is fetched over the network in the child stage
+
+Spark responsible for memory management
+	Spark nor YARN actively manage disk and I/O
+	--executor-cores
+		controls the number of concurrent tasks the executor can run
+			set max # of tasks
+		HDFS tends to have trouble with excessive concurrent threads
+			best to keep # at 5 or below
+	--executor-memory
+		amount of data Spark can cache
+		as well as max size of shuffle data structures 
+		spark.yarn.executor.memoryOverhead added to executor memory
+			accounts for some additional memory required by the JVM
+			defaults to max(384, .07 * spark.executor.memory)
+		running with too much memory > excessive garbage collection delays
+	--driver-memory and driver-cores
+		application master = non-executor container with the capacity of requesting containers from YARN
+		takes up resources of its own that need to be accounted for
+		application master runs the driver
+		may need to bolster its resources
+	--num-executors 
+		don't use
+		taken care of with dynamic allocation
+	tiny executors with single core and just enough memory to run a task > inefficient
+		ideally want multiple tasks running in a single JVM
+		using a single cache
