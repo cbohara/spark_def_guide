@@ -218,9 +218,8 @@ Launching apps with spark-submit
 			local[*] = run on all cores of your machine
 		yarn
 	--deploy-mode
-		default = client = launch the driver program locally
-			
-		cluster = launch the driver program on one of the worker machines inside the cluster
+		client (default) launch the driver program via CLI
+		cluster = launch job as as step
 	--jars
 		comma sep list of jars to include on the driver and executor classpaths
 	--py-files
@@ -267,24 +266,63 @@ Spark acquires executor resources within nodes
 SparkContext sends tasks for the executor to run
 
 
-##############################################################
-Spark Client vs Cluster deploy mode
-https://techvidvan.com/tutorials/spark-modes-of-deployment/
-##############################################################
-
-client
-	submitter launches driver outside of the cluster
-	driver exists on local machine that launched cluster
-	risk network latency and slow data movement between driver and spark infrastructure
-
-cluster
-	framework launches the driver inside of the cluster
-	driver exists on a machine in the cluster
-	reduce slow data movement
-	reduce risk of network disconnection
-
 #########################################################
 Spark Memory Mangement
 https://0x0fff.com/spark-memory-management/
 #########################################################
 
+running same code on Spark 1.5.x and 1.6 will result in diff behavior
+	starting Spark 1.6.0 memory management model changed
+	can enable spark.memory.useLegacyMode if necessary
+
+reserved memory
+	RAM reserved for the system
+		not used by spark in any way
+		does not participate in Spark memory region size calculations
+	hardcoded to 300MB
+		can set spark.testing.reservedMemory but not recommended to use in prod
+	sets the limit on what you can allocate for spark usage
+		even if you wanted to give all the Java heap to spark to cache your data you can't
+		need to set aside reserved memory for spark internal objects
+	450MB min executor memory = 300MB reserved memory * 1.5 
+		must give this minimum 150MB available to spark + user memory
+		otherwise will get please use larger heap size error message
+
+user memory
+	store data structures
+	totally up to you what would be stored in this RAM and how
+	spark does not check if you respect this boundary or not > can lead to OOM error
+
+spark memory
+	memory pool managed by apache spark
+	split into 2 regions
+		storage memory
+			store spark cached data
+			store temp partition unroll data
+				if there is not enough memory available to fit the whole partition > will write to disk
+			store broadcast variables 
+				in a cache with MEMORY_AND_DISK persistence
+		execution memory
+			store objects required during the execution of spark tasks
+				ex: store shuffle intermediate buffer on map side in memory
+				ex: store hash table for hash aggregation step
+			also supports spilling to disk if not enough memory available
+				but blocks cannot be forefully evicted by other threads (tasks)
+		boundary set by spark.memory.storageFraction
+			default to 0.5
+			not static
+			one region can grow by borrowing space from another
+				cannot evict execution memory 
+				can evict storage memory
+					its just a cache of blocks stored in RAM
+					can simply write to disk instead
+
+java heap = total executor memory
+450MB total executor memory minimum = 300MB reserved memory * 1.5
+300MB default reserved memory used for spark internals
+total executor memory - 300MB reserved memory = remaining user memory + spark memory
+remaining = 25% user memory + 75% spark memory
+user memory = (total executor memory - 300MB reserved memory) * (1.0 - 0.75 default spark.memory.fraction)
+spark memory = (total executor memory - 300MB reserved memory) * 0.75
+spark memory = default 50% storage memory + 50% execution memory
+storage memory = (total executor memory - 300MB reserved memory) * 0.75 spark memory * 0.5 storage memory portion
