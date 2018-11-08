@@ -253,17 +253,34 @@ Launching apps with spark-submit
 		only need to specify executor memory
 		maybe driver memory and overhead as well
 
-##############################################################
-Cluster overview
-https://spark.apache.org/docs/1.2.0/cluster-overview.html
-##############################################################
-
-Spark context in driver program connects with cluster manager
-	defined in app code
-Spark acquires executor resources within nodes
-	process = instance of a program running 
-	executors = processes that run computations and store data
-SparkContext sends tasks for the executor to run
+Running on a cluster
+	architecture review
+		driver
+			just a process on a physical machine
+			responsible for maintaining the state of an app running on the cluster
+			keeps track of tasks running on executors
+			interfaces with cluster manager to get physical resources and launch executors
+		executors
+			processes that perform tasks assigned by driver
+			report back state and results
+		cluster manager
+			responsible for maintaining a cluster of machines
+			master and worker abstractions are tied to actual physical machines
+				not processes like the driver and executors
+	execution modes
+		cluster mode
+			user submits pre-compiled JAR, python script to cluster manager
+			cluster manager launches driver on a worker node INSIDE the cluster
+			in addition to executor processes
+			cluster manager responsible for all processes
+		client mode
+			spark driver remains on client machine
+			client machine responsible for managing driver process
+			cluster manager responsible for executor processes
+		local mode
+			all on a single machine
+			achieves parallelism through threads on a single machine
+			for learning and testing
 
 
 #########################################################
